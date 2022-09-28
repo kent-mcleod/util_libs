@@ -79,31 +79,31 @@ acpi_sig_search(acpi_t *acpi, const char* sig, int sig_len, void* start, void* e
 {
     void *found = NULL;
     void *vaddr;
-
+    void* cur = start;
     /* work a page at a time, searching for the target string */
-    while (start < end && !found) {
-        vaddr = ps_io_map(&acpi->io_mapper, (uintptr_t) start, getpagesize(), 1, PS_MEM_NORMAL);
+    while (cur < end && !found) {
+        vaddr = ps_io_map(&acpi->io_mapper, (uintptr_t) cur, getpagesize(), 1, PS_MEM_NORMAL);
         if (vaddr == NULL) {
-            ZF_LOGD("Failed to map physical page %p\n", start);
+            ZF_LOGE("Failed to map physical page %p\n", cur);
             return NULL;
         }
 
         found = _sig_search(sig, sig_len, vaddr, vaddr + getpagesize());
 
         if (!found) {
-            start += getpagesize();
+            cur += getpagesize();
         }
 
         ps_io_unmap(&acpi->io_mapper, vaddr, getpagesize());
     }
 
     if (!found) {
-        ZF_LOGD("Faied to find sig %s in range %p <-> %p\n", sig, start, end);
+        ZF_LOGE("Faied to find sig %s in range %p <-> %p\n", sig, start, end);
         return NULL;
     }
 
     /* return the physical address of sig */
-    return (void*)((uintptr_t) start + ((uintptr_t)found % getpagesize()));
+    return (void*)((uintptr_t) cur + ((uintptr_t)found % getpagesize()));
 }
 
 acpi_header_t*

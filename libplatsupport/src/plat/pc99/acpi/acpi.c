@@ -359,6 +359,8 @@ acpi_init_with_rsdp(ps_io_mapper_t io_mapper, acpi_rsdp_t rsdp)
     return acpi;
 }
 
+acpi_rsdp_t *rsdp;
+
 acpi_t *
 acpi_init(ps_io_mapper_t io_mapper)
 {
@@ -373,15 +375,17 @@ acpi_init(ps_io_mapper_t io_mapper)
         return NULL;
     }
 
-    acpi_rsdp_t *rsdp_paddr;
-    rsdp_paddr = acpi_sig_search(acpi, ACPI_SIG_RSDP, strlen(ACPI_SIG_RSDP),
-                                 (void *) BIOS_PADDR_START, (void *) BIOS_PADDR_END);
-    if (rsdp_paddr == NULL) {
-        ZF_LOGW("Failed to find rsdp\n");
-        return NULL;
-    }
+    if (!rsdp) {
+        acpi_rsdp_t *rsdp_paddr;
+        rsdp_paddr = acpi_sig_search(acpi, ACPI_SIG_RSDP, strlen(ACPI_SIG_RSDP),
+                                     (void *) BIOS_PADDR_START, (void *) BIOS_PADDR_END);
+        if (rsdp_paddr == NULL) {
+            ZF_LOGE("Failed to find rsdp\n");
+            return NULL;
+        }
 
-    acpi_rsdp_t *rsdp = (acpi_rsdp_t *) acpi_parse_table(acpi, rsdp_paddr);
+        rsdp = (acpi_rsdp_t *) acpi_parse_table(acpi, rsdp_paddr);
+    }
     if (rsdp == NULL) {
         ZF_LOGE("Failed to parse rsdp\n");
         return NULL;
@@ -390,9 +394,9 @@ acpi_init(ps_io_mapper_t io_mapper)
     memcpy(&(acpi->rsdp), rsdp, sizeof(acpi_rsdp_t));
 
     /*rsdp was dynamically allocated. No longer require the memory*/
-    free(rsdp);
+    // free(rsdp);
 
-    ZF_LOGV("Parsing ACPI tables\n");
+    ZF_LOGE("Parsing ACPI tables\n");
     int error = acpi_parse_tables(acpi);
     if(error) {
         ZF_LOGE("Failed to parse acpi tables\n");
