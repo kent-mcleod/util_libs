@@ -25,7 +25,7 @@ int ltimer_hpet_describe_with_region(ltimer_t *ltimer, ps_io_ops_t ops, pmem_reg
 /* Initialise the description functions for a HPET based ltimer using the provided irq and region */
 int ltimer_hpet_describe(ltimer_t *ltimer, ps_io_ops_t ops, ps_irq_t irq, pmem_region_t hpet_region);
 /* Initialise a hpet based ltimer using the provided irq and region */
-int ltimer_hpet_init(ltimer_t *ltimer, ps_io_ops_t ops, ps_irq_t irq, pmem_region_t hpet_region,
+int ltimer_hpet_init(ltimer_t *ltimer, ps_io_ops_t ops, uint64_t tsc_freq, ps_irq_t irq, pmem_region_t hpet_region, 
                      ltimer_callback_fn_t callback, void *callback_token);
 
 /* Functions for specifically setting up a PIT based ltimer */

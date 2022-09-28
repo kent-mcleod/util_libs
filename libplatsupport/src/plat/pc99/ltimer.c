@@ -34,6 +34,7 @@ typedef struct {
              pmem_region_t region;
              uint64_t period;
              hpet_config_t config;
+             uint64_t tsc_freq;
         } hpet;
         struct {
             pit_t device;
@@ -163,7 +164,8 @@ static int hpet_ltimer_get_time(void *data, uint64_t *time)
     assert(time != NULL);
 
     pc99_ltimer_t *pc99_ltimer = data;
-    *time = hpet_get_time(&pc99_ltimer->hpet.device);
+    *time = tsc_get_time(pc99_ltimer->hpet.tsc_freq);
+
     return 0;
 }
 
@@ -193,7 +195,14 @@ static int hpet_ltimer_set_timeout(void *data, uint64_t ns, timeout_type_t type)
     if (type != TIMEOUT_ABSOLUTE) {
         ns += hpet_get_time(&pc99_ltimer->hpet.device);
     }
-
+    if (type == TIMEOUT_ABSOLUTE) {
+        uint64_t ts = tsc_get_time(pc99_ltimer->hpet.tsc_freq);
+        if (ts >= ns) {
+            return ETIME;
+        }
+        ns -= ts;
+        ns += hpet_get_time(&pc99_ltimer->hpet.device);
+    }
     return hpet_set_timeout(&pc99_ltimer->hpet.device, ns);
 }
 
@@ -371,13 +380,15 @@ int ltimer_default_init(ltimer_t *ltimer, ps_io_ops_t ops, ltimer_callback_fn_t 
     }
 }
 
-int ltimer_hpet_init(ltimer_t *ltimer, ps_io_ops_t ops, ps_irq_t irq, pmem_region_t region,
+int ltimer_hpet_init(ltimer_t *ltimer, ps_io_ops_t ops,  uint64_t tsc_freq, ps_irq_t irq, pmem_region_t region,
                      ltimer_callback_fn_t callback, void *callback_token)
 {
     int error = ltimer_hpet_describe(ltimer, ops, irq, region);
     if (error) {
         return error;
     }
+    pc99_ltimer_t *pc99_ltimer = ltimer->data;
+    pc99_ltimer->hpet.tsc_freq = tsc_freq;
 
     return ltimer_hpet_init_internal(ltimer, ops, callback, callback_token);
 }
